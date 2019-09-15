@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+  labels:
+    app: jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+      - name: data
+        hostPath:
+          path: /data/jupyter
+      containers:
+      - name: jupyter
+        image: jupyter/scipy-notebook:82d1d0bf0867
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8888
+        env:
+        - name: NB_UID
+          value: "1000"
+        - name: NB_GID
+          value: "1000"
+        volumeMounts:
+        - mountPath: /home/jovyan
+          name: data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter
+  labels:
+    app: jupyter
+spec:
+  type: NodePort
+  ports:
+    - nodePort: 30991
+      port: 34353
+      protocol: TCP
+      targetPort: 8888
+  selector:
+    app: jupyter
