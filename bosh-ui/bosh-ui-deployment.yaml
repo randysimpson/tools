@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bosh-ui-deployment
+  labels:
+    app: bosh-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bosh-ui
+  template:
+    metadata:
+      labels:
+        app: bosh-ui
+    spec:
+      containers:
+      - name: bosh-ui
+        image: randysimpson/bosh-ui:latest
+        ports:
+        - containerPort: 10000
+        imagePullPolicy: Always
+        env:
+        - name: BOSH_CLIENT
+          valueFrom:
+            secretKeyRef:
+              name: bosh-ui-env
+              key: BOSH-CLIENT
+        - name: BOSH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: bosh-ui-env
+              key: BOSH-CLIENT-SECRET
+        - name: BOSH_ENVIRONMENT
+          valueFrom:
+            secretKeyRef:
+              name: bosh-ui-env
+              key: BOSH-ENVIRONMENT
+        volumeMounts:
+        - name: bosh-ca-cert
+          mountPath: "/tmp"
+          readOnly: true
+      volumes:
+      - name: bosh-ca-cert
+        secret:
+          secretName: bosh-ui-ca-cert
