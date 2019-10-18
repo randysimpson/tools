@@ -2,7 +2,7 @@
 
 #create ca cert secret
 kubectl create secret generic bosh-ui-ca-cert \
-  --from-file=$BOSH_CA_CERT
+  --from-file=root_ca_certificate=$BOSH_CA_CERT
   
 #create secret for client, secret, and bosh environment.
 kubectl create secret generic bosh-ui-env \
