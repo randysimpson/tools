@@ -17,9 +17,11 @@ There are 2 options for deploying bosh-ui:
 
 ### Issue the script:
 
+The easiest way to install the bosh ui on an existing Kubernetes cluster that has networking access to the bosh director VM is to download the following script and execute it to install the components.
+
 ```sh
 $ curl -fsSL https://raw.githubusercontent.com/randysimpson/tools/master/bosh-ui/bosh-ui.sh -o bosh-ui.sh
-$ sudo sh bosh-ui.sh
+$ sh bosh-ui.sh
 ```
 
 Continue with [External IP](#external-ip)
@@ -32,7 +34,7 @@ Create necessary k8s secrets:
 
 ```sh
 kubectl create secret generic bosh-ui-ca-cert \
-  --from-file=$BOSH_CA_CERT
+  --from-file=root_ca_certificate=$BOSH_CA_CERT
 ```
 
 ```sh

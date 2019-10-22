@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx-frontend
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-frontend
+  template:
+    metadata:
+      labels:
+        app: nginx-frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx-frontend
+  name: nginx-frontend
+  namespace: troubleshooting
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-frontend
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-frontend
+  namespace: troubleshooting
+spec:
+  rules:
+  - host: nginx-test.corp.local
+    http:
+      paths:
+      - backend:
+          serviceName: nginx-frontend
+          servicePort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  namespace: troubleshooting
+spec:
+  containers:
+  - name: busybox
+    image: busybox:1.28
+    command:
+      - sleep
+      - "3600"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Always
