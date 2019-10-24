@@ -18,11 +18,17 @@ curl -fsSL https://raw.githubusercontent.com/randysimpson/tools/master/k8s/insta
 sudo sh install-kubeadm.sh
 ```
 
+To Install these and allow for a user to be able to issue docker commands use parameter of the username when issuing install command.  i.e. if username is ubuntu:
+
+```
+sudo sh install-kubeadm.sh ubuntu
+```
+
 ## create-master.sh
 
 This script will use kubeadm to create a single master node, with calico network setup.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/randysimpson/tools/master/k8s/create-master.sh -o create-master.sh
-sudo sh create-master.sh
+sudo sh create-master.sh $HOME
 ```

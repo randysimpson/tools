@@ -15,15 +15,11 @@ echo "Turn swap off"
 swapoff -a
 sleep 3
 
-echo "Comment swap line in /etc/fstab"
-sed -i -e 's/.*swap.*sw.*/#&/' /etc/fstab
-sleep 3
-
 echo "Install Docker"
 # Install Docker CE
 ## Set up the repository:
 ### Install packages to allow apt to use a repository over HTTPS
-apt-get update && apt-get install apt-transport-https ca-certificates curl software-properties-common -y
+apt-get update && apt-get install apt-transport-https ca-certificates curl software-properties-common
 sleep 3
 
 ### Add Docker’s official GPG key
@@ -38,8 +34,7 @@ add-apt-repository \
 sleep 3
 
 ## Install Docker CE.
-# versions of docker 18.09 + need cli (docker-ce-cli=18.06.2~ce~3-0~ubuntu)
-apt-get update && apt-get install docker-ce=18.06.2~ce~3-0~ubuntu containerd.io -y
+apt-get update && apt-get install docker-ce=18.06.2~ce~3-0~ubuntu docker-ce-cli=18.06.2~ce~3-0~ubuntu containerd.io -y
 sleep 3
 
 # Setup daemon.
@@ -58,9 +53,8 @@ mkdir -p /etc/systemd/system/docker.service.d
 sleep 3
 
 #check if username paramager is passed in.
-if [ "$1" != "" ]
-then
-    usermod -aG docker "$1"
+if ["$1" != "" ]; then
+  usermod -aG docker $1
 fi
 
 
@@ -85,3 +79,17 @@ echo "install kubeadm, kubelet, kubectl"
 apt-get install -y kubelet kubeadm kubectl
 sleep 3
 apt-mark hold kubelet kubeadm kubectl
+
+sleep 3
+sysctl net.bridge.bridge-nf-call-iptables=1
+
+sleep 3
+kubeadm init --pod-network-cidr=10.244.0.0/16
+
+sleep 3
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+
+sleep 3
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
