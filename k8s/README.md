@@ -64,7 +64,10 @@ wget https://raw.githubusercontent.com/randysimpson/tools/master/k8s/create-mast
 sudo sh create-master.sh weave $USER $HOME
 ```
 
-**if you want calico networking then issue `sudo sh create-master.sh calico $USER $HOME`.**
+### Networking Options
+* weave networking then issue `sudo sh create-master.sh weave $USER $HOME`.
+* calico networking then issue `sudo sh create-master.sh calico $USER $HOME`.
+* flannel networking then issue `sudo sh create-master.sh flannel $USER $HOME`.
 
 example output for weave:
 
