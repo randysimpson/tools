@@ -7,13 +7,13 @@ Deploy a local registry to store images.
 To deploy a local storage/pv you can use the following yaml.  Feel free to modify the file to ensure the pv is persistent as per [Types of Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes).
 
 ```
-kubectl create -f https://raw.githubusercontent.com/randysimpson/tools/master/k8s/deployment/localregistrypv.yaml --edit
+kubectl create -f https://raw.githubusercontent.com/randysimpson/tools/master/k8s/registry/localregistrypv.yaml --edit
 ```
 
 Create the deployments/services.
 
 ```
-kubectl create -f https://raw.githubusercontent.com/randysimpson/tools/master/k8s/deployment/localregistry.yaml
+kubectl create -f https://raw.githubusercontent.com/randysimpson/tools/master/k8s/registry/localregistry.yaml
 ```
 
 You will then need to get the ip for the registry from `kubectl get svc`:
