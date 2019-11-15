@@ -57,10 +57,12 @@ EOF
 mkdir -p /etc/systemd/system/docker.service.d
 sleep 3
 
-#check if username paramager is passed in.
+#check if username parameter is passed in.
 if [ "$1" != "" ]
 then
+    echo "Adding user $1 to group docker."
     usermod -aG docker "$1"
+    sleep 2
 fi
 
 
@@ -85,3 +87,11 @@ echo "install kubeadm, kubelet, kubectl"
 apt-get install -y kubelet kubeadm kubectl
 sleep 3
 apt-mark hold kubelet kubeadm kubectl
+sleep 5
+
+#restart shell so that docker usergroup takes effect.
+if [ "$1" != "" ]
+then
+    su $1
+    sleep 2
+fi
