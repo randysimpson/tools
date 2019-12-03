@@ -9,7 +9,7 @@ wget https://raw.githubusercontent.com/randysimpson/tools/master/k8s/install-kub
 sudo sh install-kubeadm.sh $USER
 ```
 
-or a root user can just issue `sudo sh install-kubeadm.sh`.
+or a root user can just issue `sh install-kubeadm.sh`.
 
 example output:
 
