@@ -167,7 +167,7 @@ kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP           58d
 
 Now the service is exposed on master and worker nodes on port 30991.  So lets go to a browser and visit the master node in a browser and get to your jupyter notebook.  In my example the master node is k8server1, therefore the url is `k8server1:30991`
 
-<img src={jupyterWeb} alt="web url" />
+![error loading](https://simpsonhouse.hopto.org/images/jupyter_web.PNG)
 
 One option to get the token is to use the following command:
 
@@ -199,10 +199,10 @@ Executing the command: jupyter notebook
 
 So the token in my example is `e59ae510437ffd231c4ef69b15d97d0ff115cdaaa23fe5e2`.  After entering into the token field and clicking "Log in", you will have access to jupyter!
 
-<img src={jupyterSuccess} alt="success jupyter" />
+![error loading](https://simpsonhouse.hopto.org/images/jupyter_success.PNG)
 
 #### Summary
 
 That's how you setup an jupyter notebook on a Kubernetes!
 
-Please be sure to check out other topics - [Blog Posts](/).
+Please be sure to check out other topics - [Blog Posts](https://simpsonhouse.hopto.org/blog/).
