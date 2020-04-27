@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: jupyter
+  name: jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      containers:
+      - image: randysimpson/jupyter-conda-pitorch:v1.0
+        imagePullPolicy: IfNotPresent
+        name: jupyter
+        ports:
+        - containerPort: 8888
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /root/notebooks
+          name: data
+        - mountPath: /root/.jupyter
+          name: data
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: jupyter

@@ -3,7 +3,7 @@ kind: PersistentVolume
 metadata:
   labels:
     type: local
-  name: jupyter-data
+  name: jupyter-local
 spec:
   capacity:
     storage: 1Gi
