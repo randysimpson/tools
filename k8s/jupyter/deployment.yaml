@@ -15,7 +15,7 @@ spec:
         app: jupyter
     spec:
       containers:
-      - image: randysimpson/jupyter-conda-pitorch:v1.0
+      - image: randysimpson/jupyter-conda-pytorch:v1.0
         imagePullPolicy: IfNotPresent
         name: jupyter
         ports:

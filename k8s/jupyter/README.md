@@ -13,7 +13,7 @@ wget https://raw.githubusercontent.com/randysimpson/tools/master/k8s/jupyter/cre
 sudo sh create.sh
 ```
 
-The image can be found at [docker hub](https://hub.docker.com/r/randysimpson/jupyter-conda-pitorch) and installed on a machine with docker by using `docker run --name jupyter -d -p 8080:8080 -v /host/path:/root/notebooks -v /host/path:/root/.jupyter randysimpson/jupyter-conda-pitorch`.  You will want to change `/host/path` with a folder on your machine to read/write notebook information and jupyter settings.
+The image can be found at [docker hub](https://hub.docker.com/r/randysimpson/jupyter-conda-pitorch) and installed on a machine with docker by using `docker run --name jupyter -d -p 8888:8888 -v /host/path:/root/notebooks -v /host/path:/root/.jupyter randysimpson/jupyter-conda-pytorch:v1.0`.  You will want to change `/host/path` with a folder on your machine to read/write notebook information and jupyter settings.
 
 Of course we want to run this thing using Kubernetes though.  Let's create a PVC that we can use to hold the data, but before we do that we will need a PV.
 
