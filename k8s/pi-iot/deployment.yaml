@@ -1,0 +1,75 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: upstairs-dht22
+    temp: dht-22
+  name: upstairs-dht22
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upstairs-dht22
+      temp: dht-22
+  template:
+    metadata:
+      labels:
+        app: upstairs-dht22
+        temp: dht-22
+    spec:
+      containers:
+      - env:
+        - name: pin
+          value: "23"
+        - name: source
+          value: upstairs
+        - name: type
+          value: DHT22
+        - name: webhook
+          value: http://ingestor:4545/api/v1/data
+        - name: format
+          value: f
+        - name: delay
+          value: "60"
+        image: randysimpson/pi-iot:latest
+        imagePullPolicy: IfNotPresent
+        name: pi-iot
+        securityContext:
+          privileged: true
+      nodeSelector:
+        kubernetes.io/hostname: upstairspi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: upstairspi-relay
+  name: upstairspi-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upstairspi-relay
+  template:
+    metadata:
+      labels:
+        app: upstairspi-relay
+    spec:
+      containers:
+      - env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: randysimpson/pi-relay:latest
+        imagePullPolicy: Always
+        name: upstairspi-relay
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        securityContext:
+          privileged: true
+      nodeSelector:
+        kubernetes.io/hostname: upstairspi
+        
