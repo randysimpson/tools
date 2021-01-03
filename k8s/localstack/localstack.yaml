@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: localstack
+  labels:
+    app: localstack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: localstack
+  template:
+    metadata:
+      labels:
+        app: localstack
+    spec:
+      containers:
+      - env:
+        - name: SERVICES
+          value: s3:33000
+        image: localstack/localstack:0.8.6
+        imagePullPolicy: IfNotPresent
+        name: localstack
+        ports:
+        - containerPort: 33000
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack
+spec:
+  ports:
+  - name: localstack
+    port: 33000
+    protocol: TCP
+    targetPort: 33000
+  selector:
+    app: localstack
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack-ext
+spec:
+  ports:
+  - nodePort: 30940
+    port: 33000
+    protocol: TCP
+    targetPort: 33000
+  selector:
+    app: localstack
+  sessionAffinity: None
+  type: NodePort
