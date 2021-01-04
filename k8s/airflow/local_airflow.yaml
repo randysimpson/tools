@@ -1,0 +1,802 @@
+# Source: local-airflow/templates/scheduler/scheduler-pdb.yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: airflow-scheduler
+  labels:
+    app: local-airflow
+    component: scheduler
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  maxUnavailable: 100%
+  selector:
+    matchLabels:
+      app: local-airflow
+      component: scheduler
+      release: airflow
+---
+# Source: local-airflow/templates/config/secret-connections.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: airflow-connections
+  labels:
+    app: airflow
+    chart: "local-airflow-1.0.0"
+    release: "airflow"
+    heritage: "Tiller"
+type: Opaque
+data:
+  add-connections.sh: CiAgIyEvdXNyL2Jpbi9lbnYgYmFzaAogIGFpcmZsb3cgY29ubmVjdGlvbnMgLS1kZWxldGUgLS1jb25uX2lkIGF3c19kZWZhdWx0CiAgYWlyZmxvdyBjb25uZWN0aW9ucyAtLWFkZCAtLWNvbm5faWQgYXdzX2RlZmF1bHQgLS1jb25uX3R5cGUgImF3cyIgIC0tY29ubl9leHRyYSAneyJhd3NfYWNjZXNzX2tleV9pZCI6IlhYWFhYWFhYWFhYWFhYWFhYWFgiLCJhd3Nfc2VjcmV0X2FjY2Vzc19rZXkiOiJYWFhYWFhYWFhYWFhYWFgiLCJob3N0IjoiaHR0cDovL3MzOjMzMDAwIiwicmVnaW9uX25hbWUiOiJ1cy1lYXN0LTEifScKCg==
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-local-settings
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+data:
+  airflow_local_settings.py: |
+    def pod_mutation_hook(pod):
+      pod.metadata.annotations = pod.metadata.annotations or {}
+      pod.metadata.annotations['iam.amazonaws.com/role']= 'test'
+---
+# Source: local-airflow/templates/config/configmap-env.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-env
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+data:
+  ## Force UTC timezone
+  TZ: Etc/UTC
+
+  ## ----------------
+  ## Database
+  ## ----------------
+  DATABASE_HOST: "psql"
+  DATABASE_PORT: "5432"
+  DATABASE_USER: "airflow"
+  DATABASE_DB: "airflow"
+  DATABASE_PROPERTIES: |
+    
+  # bash command which echos the URL encoded value of $DATABASE_PASSWORD
+  DATABASE_PASSWORD_CMD: |
+    echo ${DATABASE_PASSWORD} | python3 -c "import urllib.parse; encoded_pass = urllib.parse.quote(input()); print(encoded_pass)"
+  # bash command which echos the DB connection string in SQLAlchemy format
+  DATABASE_SQLALCHEMY_CMD: |
+    echo -n "postgresql+psycopg2://${DATABASE_USER}:$(eval $DATABASE_PASSWORD_CMD)@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_DB}${DATABASE_PROPERTIES}"
+  # bash command which echos the DB connection string in Celery result_backend format
+  DATABASE_CELERY_CMD: |
+    echo -n "db+postgresql://${DATABASE_USER}:$(eval $DATABASE_PASSWORD_CMD)@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_DB}${DATABASE_PROPERTIES}"
+
+  ## ----------------
+  ## Airflow
+  ## ----------------
+  AIRFLOW__CORE__BASE_LOG_FOLDER: "/opt/airflow/logs"
+  AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags"
+  AIRFLOW__CORE__DAG_PROCESSOR_MANAGER_LOG_LOCATION: "/opt/airflow/logs/dag_processor_manager/dag_processor_manager.log"
+  AIRFLOW__CORE__DONOT_PICKLE: "false"
+  AIRFLOW__CORE__ENABLE_XCOM_PICKLING: "false" # for forward compatibility with 2.0
+  AIRFLOW__CORE__ENCRYPT_S3_LOGS: "False"
+  AIRFLOW__CORE__EXECUTOR: "KubernetesExecutor"
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN_CMD: |
+    bash -c 'eval "$DATABASE_SQLALCHEMY_CMD"'
+  AIRFLOW__SCHEDULER__CHILD_PROCESS_LOG_DIRECTORY: "/opt/airflow/logs/scheduler"
+  AIRFLOW__WEBSERVER__BASE_URL: "http://localhost:8080"
+  AIRFLOW__WEBSERVER__WEB_SERVER_PORT: "8080"
+  ## ----------------
+  ## Airflow - KubernetesExecutor
+  ## ----------------
+  AIRFLOW__KUBERNETES__ENV_FROM_CONFIGMAP_REF: "airflow-env"
+  AIRFLOW__KUBERNETES__ENV_FROM_SECRET_REF: "airflow-fernet,airflow-postgres"
+  AIRFLOW__KUBERNETES__NAMESPACE: "default"
+  AIRFLOW__KUBERNETES__WORKER_SERVICE_ACCOUNT_NAME: "airflow"
+  ## ----------------
+  ## Airflow - User Configs
+  ## ----------------
+  AIRFLOW__API__AUTH_BACKEND: airflow.api.auth.backend.deny_all
+  AIRFLOW__CORE__REMOTE_BASE_LOG_FOLDER: s3://logs
+  AIRFLOW__CORE__REMOTE_LOG_CONN_ID: aws_default
+  AIRFLOW__CORE__REMOTE_LOGGING: "True"
+  AIRFLOW__CORE__FERNET_KEY: "aqrG-TmuyyNfqMK8dMwqk4Y387FtpyEODUFjfJ-7Li0="
+  #fernet key needs to be in workers for s3 write, could mount this as secret
+  AIRFLOW__CORE__SECURE_MODE: "True"
+  AIRFLOW__KUBERNETES__AIRFLOW_LOCAL_SETTINGS_CONFIGMAP: "airflow-local-settings"
+  AIRFLOW__KUBERNETES__DAGS_IN_IMAGE: "True"
+  AIRFLOW__KUBERNETES__DELETE_WORKER_PODS: "True"
+  AIRFLOW__KUBERNETES__DELETE_WORKER_PODS_ON_FAILURE: "False"
+  AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY: randysimpson/airflow
+  AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG: tutorial
+  AIRFLOW__KUBERNETES__WORKER_PODS_CREATION_BATCH_SIZE: "9"
+  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
+  GUNICORN_CMD_ARGS: --log-level WARNING
+---
+# Source: local-airflow/templates/config/configmap-scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-scripts
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+data:
+  install-requirements.sh: |
+    #!/bin/bash -e
+    if [ ! -d "/opt/airflow/dags" ]; then
+      echo 'No folder "/opt/airflow/dags"'
+      exit 0
+    fi
+
+    cd "/opt/airflow/dags"
+    if [ -f requirements.txt ]; then
+      pip install --user -r requirements.txt
+    else
+      exit 0
+    fi
+  graceful-stop-celery-worker.sh: |
+    #!/bin/bash -e
+    echo "*** starting graceful worker shutdown"
+
+    # set the required environment variables
+    export AIRFLOW__CELERY__BROKER_URL=$(eval $AIRFLOW__CELERY__BROKER_URL_CMD)
+
+    # prevent the worker accepting new tasks
+    echo "*** preventing worker accepting new tasks"
+    celery control --broker $AIRFLOW__CELERY__BROKER_URL --destination celery@$HOSTNAME cancel_consumer default
+    sleep 5
+
+    # loop until all active task are finished
+    echo "*** waiting for active tasks to finish"
+    while (( celery inspect --broker $AIRFLOW__CELERY__BROKER_URL --destination celery@$HOSTNAME --json active | python3 -c "import json; active_tasks = json.loads(input())['celery@$HOSTNAME']; print(len(active_tasks))" > 0 )); do
+      sleep 10
+    done
+  preinit-db.sh: |
+    #!/bin/bash
+    echo "*** Waiting 10s for database"
+    sleep 10
+
+    COUNT=0
+    while [ "${COUNT}" -lt 5 ]; do
+      echo "*** Initializing airflow db"
+      if airflow initdb; then
+        echo "*** Initdb succeeded"
+        exit 0
+      else
+        ((COUNT++))
+        echo "*** Initdb failed: waiting 5s before retry #${COUNT}"
+        sleep 5
+      fi
+    done
+
+    echo "*** Initdb failed after ${COUNT} retries; failed."
+    exit 1
+---
+# Source: local-airflow/templates/rbac/airflow-serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: airflow
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+---
+# Source: local-airflow/templates/rbac/airflow-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: airflow
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - "create"
+  - "get"
+  - "delete"
+  - "list"
+  - "watch"
+- apiGroups:
+  - ""
+  resources:
+  - "pods/log"
+  verbs:
+  - "get"
+  - "list"
+- apiGroups:
+  - ""
+  resources:
+  - "pods/exec"
+  verbs:
+  - "create"
+  - "get"
+---
+# Source: local-airflow/templates/rbac/airflow-rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: airflow
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: airflow
+subjects:
+- kind: ServiceAccount
+  name: airflow
+  namespace: default
+---
+# Source: local-airflow/templates/webserver/webserver-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-web
+  labels:
+    app: local-airflow
+    component: web
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  type: NodePort
+  selector:
+    app: local-airflow
+    component: web
+    release: airflow
+  sessionAffinity: None
+  ports:
+    - name: web
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-s3
+  labels:
+    app: local-airflow
+    component: localstack
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  ports:
+  - name: airflow-s3
+    port: 33000
+    protocol: TCP
+    targetPort: 33000
+  selector:
+    app: local-airflow
+    component: localstack
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-pg-headless
+  labels:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 5432
+  selector:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-pg
+  labels:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+  selector:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    type: local
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+  name: airflow-pg
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  hostPath:
+    path: /pv-data/airflow
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeMode: Filesystem
+  volumeName: airflow-pg
+metadata:
+  labels:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+  name: airflow-pg
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: local-airflow
+    component: postgres
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+  name: airflow-pg
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: local-airflow
+      component: postgres
+      chart: local-airflow-1.0.0
+      release: airflow
+      heritage: Tiller
+  serviceName: pg-movies-headless
+  template:
+    metadata:
+      labels:
+        app: local-airflow
+        component: postgres
+        chart: local-airflow-1.0.0
+        release: airflow
+        heritage: Tiller
+      name: airflow-pg
+    spec:
+      containers:
+        - env:
+            - name: BITNAMI_DEBUG
+              value: 'false'
+            - name: POSTGRESQL_PORT_NUMBER
+              value: '5432'
+            - name: POSTGRESQL_VOLUME_DIR
+              value: /bitnami/postgresql
+            - name: PGDATA
+              value: /bitnami/postgresql/data
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  key: DATABASE_USER
+                  name: airflow-postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: DATABASE_PASSWORD
+                  name: airflow-postgres
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: 'no'
+          image: 'docker.io/bitnami/postgresql:11.7.0-debian-10-r9'
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: pg-movies
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - '-e'
+                - >
+                  exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
+
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f
+                  /bitnami/postgresql/.initialized ]
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          securityContext:
+            runAsUser: 1001
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: dshm
+            - mountPath: /bitnami/postgresql
+              name: data
+      initContainers:
+        - command:
+            - /bin/sh
+            - '-cx'
+            - >
+              echo "current user id: `id`"
+
+              mkdir -p /bitnami/postgresql/data
+
+              chmod 700 /bitnami/postgresql/data
+
+              find /bitnami/postgresql -mindepth 1 -maxdepth 1 -not -name
+              ".snapshot" -not -name "lost+found" | \
+                xargs chown -R 1001:1001
+              chmod -R 777 /dev/shm
+          image: 'docker.io/bitnami/minideb:stretch'
+          imagePullPolicy: Always
+          name: init-chmod-data
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /bitnami/postgresql
+              name: data
+            - mountPath: /dev/shm
+              name: dshm
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1001
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: data
+          persistentVolumeClaim:
+            claimName: airflow-pg
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3
+  labels:
+    app: local-airflow
+    component: localstack
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: local-airflow
+      component: localstack
+      chart: local-airflow-1.0.0
+      release: airflow
+      heritage: Tiller
+  template:
+    metadata:
+      labels:
+        app: local-airflow
+        component: localstack
+        chart: local-airflow-1.0.0
+        release: airflow
+        heritage: Tiller
+    spec:
+      containers:
+      - env:
+        - name: SERVICES
+          value: s3:33000
+        image: localstack/localstack:0.8.6
+        imagePullPolicy: IfNotPresent
+        name: localstack
+        ports:
+        - containerPort: 33000
+          protocol: TCP
+      restartPolicy: Always
+---
+# Source: local-airflow/templates/scheduler/scheduler-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+  labels:
+    app: local-airflow
+    component: scheduler
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  replicas: 1
+  strategy:
+    # this is safe as long as `maxSurge` is 0
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: "100%"
+  selector:
+    matchLabels:
+      app: local-airflow
+      component: scheduler
+      release: airflow
+  template:
+    metadata:
+      annotations:
+        checksum/config-env: 0816cb857d3e44e748ae1f7924185b01ea36c179d9baadac820611c319410c99
+        checksum/config-scripts: b9faf62e15189a05042527501621bd9557dc13456f7f6a76ad26a86ab1d7046e
+        checksum/config-variables-pools: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+        checksum/secret-connections: d06b74023a4a255160237463c1c836dd2eca168ee5458dde525a027d00f9b653
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+      labels:
+        app: local-airflow
+        component: scheduler
+        release: airflow
+    spec:
+      restartPolicy: Always
+      serviceAccountName: airflow
+      containers:
+        - name: local-airflow-scheduler
+          image: randysimpson/airflow:tutorial
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: "airflow-env"
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_PORT
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_USER
+            - name: DATABASE_DB
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_DB
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_PASSWORD
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-fernet
+                  key: AIRFLOW__CORE__FERNET_KEY
+            
+          volumeMounts:
+            - name: scripts
+              mountPath: /home/airflow/scripts
+            - name: connections
+              mountPath: /home/airflow/connections
+            - name: airflow-local-settings
+              mountPath: /opt/airflow/config
+          command:
+            - "bash"
+          args:
+            - "-c"
+            - >
+              true \
+               && mkdir -p /home/airflow/.local/bin \
+               && export PATH="/home/airflow/.local/bin:$PATH" \
+               && echo "*** executing Airflow initdb..." \
+               && airflow initdb \
+               && echo "*** adding Airflow connections..." \
+               && /home/airflow/connections/add-connections.sh \
+               && echo "*** running scheduler..." \
+               && exec airflow scheduler -n -1
+          livenessProbe:
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            failureThreshold: 5
+            exec:
+              command:
+              - python
+              - -Wignore
+              - -c
+              - |
+                import os
+                os.environ['AIRFLOW__CORE__LOGGING_LEVEL'] = 'ERROR'
+                os.environ['AIRFLOW__LOGGING__LOGGING_LEVEL'] = 'ERROR'
+                from airflow.jobs.scheduler_job import SchedulerJob
+                from airflow.utils.net import get_hostname
+                import sys
+                job = SchedulerJob.most_recent_job()
+                sys.exit(0 if job.is_alive() and job.hostname == get_hostname() else 1)
+      volumes:
+        - name: scripts
+          configMap:
+            name: airflow-scripts
+            defaultMode: 0755
+        - name: airflow-local-settings
+          configMap:
+            name: airflow-local-settings
+            defaultMode: 0755
+        - name: connections
+          secret:
+            secretName: airflow-connections
+            defaultMode: 0755
+---
+# Source: local-airflow/templates/webserver/webserver-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-web
+  labels:
+    app: local-airflow
+    component: web
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  strategy:
+    # this is safe - multiple web pods can run concurrently
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: local-airflow
+      component: web
+      release: airflow
+  template:
+    metadata:
+      annotations:
+        checksum/config-env: 0816cb857d3e44e748ae1f7924185b01ea36c179d9baadac820611c319410c99
+        checksum/config-scripts: b9faf62e15189a05042527501621bd9557dc13456f7f6a76ad26a86ab1d7046e
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+      labels:
+        app: local-airflow
+        component: web
+        release: airflow
+    spec:
+      restartPolicy: Always
+      serviceAccountName: airflow
+      containers:
+        - name: local-airflow-web
+          image: randysimpson/airflow:tutorial
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: "airflow-env"
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_PORT
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_USER
+            - name: DATABASE_DB
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_DB
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-postgres
+                  key: DATABASE_PASSWORD
+            - name: AIRFLOW__CORE__FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: airflow-fernet
+                  key: AIRFLOW__CORE__FERNET_KEY
+            
+          volumeMounts:
+            - name: scripts
+              mountPath: /home/airflow/scripts
+            - name: airflow-local-settings
+              mountPath: /opt/airflow/config
+          command:
+            - "bash"
+          args:
+            - "-c"
+            - >
+              true \
+               && mkdir -p /home/airflow/.local/bin \
+               && export PATH="/home/airflow/.local/bin:$PATH" \
+               && echo "*** running webserver..." \
+               && exec airflow webserver
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: "/health"
+              port: web
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 2
+      volumes:
+        - name: scripts
+          configMap:
+            name: airflow-scripts
+            defaultMode: 0755
+        - name: airflow-local-settings
+          configMap:
+            name: airflow-local-settings
+            defaultMode: 0755
