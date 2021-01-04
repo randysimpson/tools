@@ -29,7 +29,7 @@ metadata:
     heritage: "Tiller"
 type: Opaque
 data:
-  add-connections.sh: CiAgIyEvdXNyL2Jpbi9lbnYgYmFzaAogIGFpcmZsb3cgY29ubmVjdGlvbnMgLS1kZWxldGUgLS1jb25uX2lkIGF3c19kZWZhdWx0CiAgYWlyZmxvdyBjb25uZWN0aW9ucyAtLWFkZCAtLWNvbm5faWQgYXdzX2RlZmF1bHQgLS1jb25uX3R5cGUgImF3cyIgIC0tY29ubl9leHRyYSAneyJhd3NfYWNjZXNzX2tleV9pZCI6IlhYWFhYWFhYWFhYWFhYWFhYWFgiLCJhd3Nfc2VjcmV0X2FjY2Vzc19rZXkiOiJYWFhYWFhYWFhYWFhYWFgiLCJob3N0IjoiaHR0cDovL3MzOjMzMDAwIiwicmVnaW9uX25hbWUiOiJ1cy1lYXN0LTEifScKCg==
+  add-connections.sh: IyEvdXNyL2Jpbi9lbnYgYmFzaAphaXJmbG93IGNvbm5lY3Rpb25zIC0tZGVsZXRlIC0tY29ubl9pZCBhd3NfZGVmYXVsdAphaXJmbG93IGNvbm5lY3Rpb25zIC0tYWRkIC0tY29ubl9pZCBhd3NfZGVmYXVsdCAtLWNvbm5fdHlwZSAiYXdzIiAgLS1jb25uX2V4dHJhICd7ImF3c19hY2Nlc3Nfa2V5X2lkIjoiWFhYWFhYWFhYWFhYWFhYWFhYWCIsImF3c19zZWNyZXRfYWNjZXNzX2tleSI6IlhYWFhYWFhYWFhYWFhYWCIsImhvc3QiOiJodHRwOi8vYWlyZmxvdy1zMzozMzAwMCIsInJlZ2lvbl9uYW1lIjoidXMtZWFzdC0xIn0nCg==
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -63,10 +63,6 @@ data:
   ## ----------------
   ## Database
   ## ----------------
-  DATABASE_HOST: "psql"
-  DATABASE_PORT: "5432"
-  DATABASE_USER: "airflow"
-  DATABASE_DB: "airflow"
   DATABASE_PROPERTIES: |
     
   # bash command which echos the URL encoded value of $DATABASE_PASSWORD
