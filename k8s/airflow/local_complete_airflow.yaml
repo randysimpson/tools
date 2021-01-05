@@ -59,10 +59,10 @@ metadata:
     heritage: Tiller
 type: Opaque
 data:
-  DATABASE_PORT: NTQzMgo=
-  DATABASE_DB: YWlyZmxvdwo=
-  DATABASE_HOST: YWlyZmxvdy1wZwo=
-  DATABASE_PASSWORD: Vk13YXJlMSE=
+  DATABASE_PORT: NTQzMg==
+  DATABASE_DB: YWlyZmxvdw==
+  DATABASE_HOST: YWlyZmxvdy1wZw==
+  DATABASE_PASSWORD: UGFTc1dvckQ=
   DATABASE_USER: YWlyZmxvdw==
 ---
 apiVersion: v1
