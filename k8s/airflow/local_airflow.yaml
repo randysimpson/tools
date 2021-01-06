@@ -34,6 +34,20 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: airflow-localstack-init
+  labels:
+    app: local-airflow
+    chart: local-airflow-1.0.0
+    release: airflow
+    heritage: Tiller
+data:
+  create-logs-bucket.sh: |
+    #!/bin/bash -e
+    awslocal s3 mb s3://logs
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: airflow-local-settings
   labels:
     app: local-airflow
@@ -281,10 +295,18 @@ metadata:
     heritage: Tiller
 spec:
   ports:
-  - name: airflow-s3
+  - name: port-1
     port: 33000
     protocol: TCP
-    targetPort: 33000
+    targetPort: 4566
+  - name: port-2
+    port: 4571
+    protocol: TCP
+    targetPort: 4571
+  - name: port-3
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
   selector:
     app: local-airflow
     component: localstack
@@ -513,7 +535,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: s3
+  name: airflow-s3
   labels:
     app: local-airflow
     component: localstack
@@ -541,14 +563,32 @@ spec:
       containers:
       - env:
         - name: SERVICES
-          value: s3:33000
-        image: localstack/localstack:0.8.6
+          value: s3
+        - name: DEBUG
+          value: "1"
+        - name: PORT_WEB_UI
+          value: "8080"
+        - name: INIT_SCRIPTS_PATH
+          value: /init
+        image: localstack/localstack:0.12.4
         imagePullPolicy: IfNotPresent
         name: localstack
         ports:
-        - containerPort: 33000
+        - containerPort: 4566
           protocol: TCP
+        - containerPort: 4571
+          protocol: TCP
+        - containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /init
+          name: localstack-scripts
       restartPolicy: Always
+      volumes:
+        - name: localstack-scripts
+          configMap:
+            name: airflow-localstack-init
+            defaultMode: 0755
 ---
 # Source: local-airflow/templates/scheduler/scheduler-deployment.yaml
 apiVersion: apps/v1
@@ -667,6 +707,31 @@ spec:
                 import sys
                 job = SchedulerJob.most_recent_job()
                 sys.exit(0 if job.is_alive() and job.hostname == get_hostname() else 1)
+      initContainers:
+      - name: wait-for-psql
+        image: 'docker.io/bitnami/postgresql:11.7.0-debian-10-r9'
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_PORT
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_USER
+        command:
+        - /bin/sh
+        - '-c'
+        - '-e'
+        - >
+          exec pg_isready -U $DATABASE_USER -h $DATABASE_HOST -p $DATABASE_PORT
       volumes:
         - name: scripts
           configMap:
@@ -787,6 +852,31 @@ spec:
             timeoutSeconds: 3
             successThreshold: 1
             failureThreshold: 2
+      initContainers:
+      - name: wait-for-psql
+        image: 'docker.io/bitnami/postgresql:11.7.0-debian-10-r9'
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_HOST
+        - name: DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_PORT
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: airflow-postgres
+              key: DATABASE_USER
+        command:
+        - /bin/sh
+        - '-c'
+        - '-e'
+        - >
+          exec pg_isready -U $DATABASE_USER -h $DATABASE_HOST -p $DATABASE_PORT
       volumes:
         - name: scripts
           configMap:

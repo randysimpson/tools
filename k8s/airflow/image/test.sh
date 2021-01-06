@@ -3,7 +3,7 @@
 echo "Hello there"
 
 TEST_ARG=$1
-if [[ $TEST_ARG == "Awesome"]];
+if [[ $TEST_ARG == "Awesome" || $TEST_ARG == *"awesome"* ]]
 then
   OTHER_VAR=awesome
 else
