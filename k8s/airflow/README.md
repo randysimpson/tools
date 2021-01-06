@@ -62,6 +62,19 @@ $ kubectl create -f https://raw.githubusercontent.com/randysimpson/tools/master/
 
 The yaml produced is based off the helm chart found at https://github.com/airflow-helm/charts/tree/main/charts/airflow version v7.14.0.  If you want to learn more about how to work with helm charts take a look at the blog on [helm](https://simpsonhouse.hopto.org/blog/Helm).
 
+The airflow UI is exposed as `NodePort` therefore it is exposed on every node in the k8s cluster on a specific port.  To find what port it's exposed on use `kubectl get svc airflow-web`:
+
+```
+$ kubectl get svc airflow-web
+NAME          TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+airflow-web   NodePort   10.105.198.41   <none>        8080:30491/TCP   7m17s
+```
+
+In my example it can be found on port 30491.  I'll use the worker node to access the UI so it is http://k8worker1:30491
+
+![Airflow UI](https://raw.githubusercontent.com/randysimpson/tools/master/k8s/airflow/airflow_ui.png)
+
+
 ### Licence
 
 MIT License
