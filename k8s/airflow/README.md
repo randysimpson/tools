@@ -74,6 +74,11 @@ In my example it can be found on port 30491.  I'll use the worker node to access
 
 ![Airflow UI](https://raw.githubusercontent.com/randysimpson/tools/master/k8s/airflow/airflow_ui.png)
 
+Be sure to check out these other articles about Airflow:
+* [Airflow Logging](https://github.com/randysimpson/tools/blob/master/k8s/airflow/docs/logging.md)
+* [Airflow pod hook](https://github.com/randysimpson/tools/blob/master/k8s/airflow/docs/hook.md)
+
+---
 
 ### Licence
 
