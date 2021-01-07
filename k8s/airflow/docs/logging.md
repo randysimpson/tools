@@ -9,6 +9,7 @@ When I setup Airflow on Kubernetes I had a few issues with logging.  I kept on s
     This could be useful if you are going to use fluentd for logging on your Kubernetes cluster.  It's not hard to set this up it just doesn't seem very intuitive.  First thing is to setup some environment variables in the configMap `airflow-env`:
     * `AIRFLOW__CORE__REMOTE_LOGGING: "True"`
     * `AIRFLOW__ELASTICSEARCH__WRITE_STDOUT: "True"`
+    * `AIRFLOW__ELASTICSEARCH__HOST: "not-a-host"`
 
     There is an option to output the logs in json format, and that is just another environment variable in the same configMap `airflow-env`:
 

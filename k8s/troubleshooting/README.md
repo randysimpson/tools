@@ -1,5 +1,44 @@
 # Troubleshooting
 
+## Debugging pod
+
+I've found that when troubleshooting pods in a kubernetes cluster it is sometimes useful to create an ubuntu pod or a python pod.
+
+There is an easy way to do this, let's do a python pod by using this command `kubectl run python-debug --rm --tty -i --restart='Never' --image python:3.7-buster --command -- /bin/bash`:
+
+```
+$ kubectl run python-debug --rm --tty -i --restart='Never' --image python:3.7-buster --command -- /bin/bash
+If you don't see a command prompt, try pressing enter.
+root@python-debug:/#  
+```
+
+Then you can run your commands:
+
+```
+root@python-debug:/#  python --version
+Python 3.7.9
+root@python-debug:/# 
+```
+
+And when your done just type `exit`.
+
+```
+root@python-debug:/# exit
+exit
+pod "python-debug" deleted
+$ 
+```
+
+## curl trick
+
+curl ouptut of k8s call as body, or you could use any output.  The magic is using the pipe `|` into a curl command and then using the `--data-binary @-`:
+
+```
+kubectl get pod <pod_name> -o json | curl -H "Content-Type: application/json" -X POST --data-binary @- http://127.0.0.1:3000/api 
+```
+
+## DNS
+
 Visit official kubernetes site for additional [DNS troubleshooting](https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/)
 
 ## Busybox
@@ -21,8 +60,6 @@ kubectl exec -ti busybox -- nslookup kubernetes.default
 ```
 kubectl exec -ti busybox -n vmware-system-tmc -- cat /etc/resolv.conf
 ```
-
-
 
 ## License
 

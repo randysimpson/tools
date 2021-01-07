@@ -1,4 +1,13 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: localstack-init
+data:
+  create-bucket.sh: |
+    #!/bin/bash -e
+    awslocal s3 mb s3://bucket
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: localstack-aws
@@ -35,6 +44,8 @@ spec:
           value: s3
         - name: PORT_WEB_UI
           value: "8080"
+        - name: INIT_SCRIPTS_PATH
+          value: /init
         image: localstack/localstack:0.12.4
         imagePullPolicy: IfNotPresent
         name: localstack
@@ -45,4 +56,12 @@ spec:
           protocol: TCP
         - containerPort: 8080
           protocol: TCP
+        volumeMounts:
+        - mountPath: /init
+          name: localstack-scripts
       restartPolicy: Always
+      volumes:
+        - name: localstack-scripts
+          configMap:
+            name: localstack-init
+            defaultMode: 0755
