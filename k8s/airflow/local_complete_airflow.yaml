@@ -152,7 +152,6 @@ data:
   AIRFLOW__CORE__REMOTE_BASE_LOG_FOLDER: s3://logs
   AIRFLOW__CORE__REMOTE_LOG_CONN_ID: aws_default
   AIRFLOW__CORE__REMOTE_LOGGING: "True"
-  AIRFLOW__CORE__FERNET_KEY: "aqrG-TmuyyNfqMK8dMwqk4Y387FtpyEODUFjfJ-7Li0="
   #fernet key needs to be in workers for s3 write, could mount this as secret
   AIRFLOW__CORE__SECURE_MODE: "True"
   AIRFLOW__KUBERNETES__AIRFLOW_LOCAL_SETTINGS_CONFIGMAP: "airflow-local-settings"
