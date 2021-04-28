@@ -457,7 +457,7 @@ spec:
       chart: local-airflow-1.0.0
       release: airflow
       heritage: Tiller
-  serviceName: pg-movies-headless
+  serviceName: airflow-pg-headless
   template:
     metadata:
       labels:
@@ -508,7 +508,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 5
-          name: pg-movies
+          name: airflow-pg
           ports:
             - containerPort: 5432
           readinessProbe:
